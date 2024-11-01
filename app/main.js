@@ -1,12 +1,6 @@
 import net from "net";
 
-const pick = (obj, ...args) => ({
-  ...args.reduce((res, key) => ({ ...res, [key]: obj[key] }), { })
-})
-
-const sendResponseMessage = (connection, messageObj) => {
-  return connection.write(Buffer.concat(Object.values(messageObj)));
-};
+import { sendResponseMessage, pick } from "./utils/index.js";
 
 const server = net.createServer((connection) => {
   connection.on("data", (buffer) => {
@@ -27,13 +21,6 @@ const server = net.createServer((connection) => {
       pick(responseMessage, "messageSize", "correlationId"),
     );
   });
-
-  // const responseMessage = {
-  //   messageSize: Buffer.from(new Array(4).fill(0)),
-  //   correlationId: Buffer.from([...new Array(3).fill(0), 7]),
-  // };
-
-  // sendResponseMessage(connection, responseMessage);
 });
 
 server.listen(9092, "127.0.0.1");
