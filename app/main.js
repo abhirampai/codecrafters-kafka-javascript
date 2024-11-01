@@ -1,11 +1,12 @@
 import net from "net";
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-// console.log("Logs from your program will appear here!");
-
-// Uncomment this block to pass the first stage
 const server = net.createServer((connection) => {
-  // Handle connection
+  const responseMessage = {
+    messageSize: Buffer.from(new Array(4).fill(0)),
+    correlationId: Buffer.from([...new Array(3).fill(0), 7])
+  }
+
+  connection.write(Buffer.concat(Object.values(responseMessage)));
 });
 
 server.listen(9092, "127.0.0.1");
