@@ -1,0 +1,1 @@
+export const API_KEY_VERSIONS = [0, 1, 2, 3, 4]
