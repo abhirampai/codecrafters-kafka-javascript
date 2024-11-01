@@ -1,3 +1,5 @@
+import { API_KEYS } from "../constants.js";
+
 export const pick = (obj, ...args) => ({
   ...args.reduce((res, key) => ({ ...res, [key]: obj[key] }), {}),
 });
@@ -11,9 +13,7 @@ export const apiVersioningResponseFields = (version) => {
     "correlationId",
     "errorCode",
     "apiKeyLength",
-    "requestApiKey",
-    "minVersion",
-    "maxVersion"
+    ...Object.keys(API_KEYS).map((key) => `${key}ApiKeys`),
   ];
   switch (version) {
     case 0:
@@ -23,6 +23,17 @@ export const apiVersioningResponseFields = (version) => {
       return [...defaultFields, "throttleTimeMs"];
     case 3:
     case 4:
-      return [...defaultFields, "arrayTagBuffer","throttleTimeMs", "tagBuffer"];
+      return [...defaultFields, "throttleTimeMs", "tagBuffer"];
   }
 };
+
+export const calculateMessageSize = (message, requestVersion) => {
+  return Buffer.concat(
+    Object.values(
+      pick(
+        message,
+        ...apiVersioningResponseFields(requestVersion),
+      ),
+    ),
+  ).length;
+}
