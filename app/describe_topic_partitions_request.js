@@ -12,7 +12,6 @@ export const handleDescribeTopicPartitionsRequest = (
   const throttleTimeMs = Buffer.from([0, 0, 0, 0]);
   let errorCode = Buffer.from([0, 3]);
   let topicId = Buffer.from(new Array(16).fill(0));
-  let partitions = [];
   let partitionBuffer = Buffer.from([0]);
   const topicAuthorizedOperations = Buffer.from("00000df8", "hex");
 
@@ -35,11 +34,11 @@ export const handleDescribeTopicPartitionsRequest = (
       topicIndex + topicLength.readInt8() - 1,
     );
 
-    topicIndex += topicLength.readInt8() - 1;
+    topicIndex += topicLength.readInt8();
     return [topicLength, topicName];
   });
 
-  const responsePartitionLimitIndex = topicIndex + 1;
+  const responsePartitionLimitIndex = topicIndex;
   const _responsePartitionLimit = buffer.subarray(
     responsePartitionLimitIndex,
     responsePartitionLimitIndex + 4,
@@ -53,7 +52,8 @@ export const handleDescribeTopicPartitionsRequest = (
 
   updatedResponse.topicLength = Buffer.from([topics.length + 1]);
   topics.forEach(([topicLength, topicName], index) => {
-    let topicIndexInLogFile = logFile.indexOf(topicName.toString());
+    let partitions = [];
+    let topicIndexInLogFile = logFile.indexOf(topicName);
     if (topicIndexInLogFile !== -1) {
       errorCode = Buffer.from([0, 0]);
       topicIndexInLogFile = topicIndexInLogFile + topicLength.readUInt8() - 1;
@@ -63,7 +63,7 @@ export const handleDescribeTopicPartitionsRequest = (
       let partitionIndex = topicLogs.indexOf(topicId);
       while (partitionIndex !== -1) {
         const partitionErrorCode = Buffer.from([0, 0]);
-        const partionId = topicLogs.subarray(
+        const partitionId = topicLogs.subarray(
           partitionIndex - 4,
           partitionIndex,
         );
@@ -97,7 +97,7 @@ export const handleDescribeTopicPartitionsRequest = (
         partitions.push(
           Buffer.concat([
             partitionErrorCode,
-            partionId,
+            partitionId,
             leaderId,
             leaderEppoch,
             replicaArrayBuffer,
@@ -138,14 +138,13 @@ export const handleDescribeTopicPartitionsRequest = (
     cursortagbuffer: tagBuffer,
   };
 
-  const messageSize = Buffer.from([
-    0,
-    0,
-    0,
+  const messageSizeBuffer = Buffer.alloc(4);
+  messageSizeBuffer.writeInt32BE([
     Buffer.concat(Object.values(updatedResponse)).length,
   ]);
+
   updatedResponse = {
-    messageSize,
+    messageSize: messageSizeBuffer,
     ...updatedResponse,
   };
 
@@ -153,9 +152,7 @@ export const handleDescribeTopicPartitionsRequest = (
 };
 
 const handleReplicaAndIsrNodes = (arrayIndex, topicLogs) => {
-  console.log(arrayIndex)
   const lengthOfArray = topicLogs.subarray(arrayIndex, arrayIndex + 1);
-  console.log(lengthOfArray)
   const arrayLengthIn8 = lengthOfArray.readInt8() - 1;
   arrayIndex += 1;
   const arrayNodes = new Array(arrayLengthIn8).fill(0).map((_) => {
