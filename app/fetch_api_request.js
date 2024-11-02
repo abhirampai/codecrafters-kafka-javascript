@@ -8,8 +8,6 @@ export const handleFetchApiRequest = (connection, responseMessage, buffer) => {
   let responses = Buffer.from([1]);
   const tagBuffer = Buffer.from([0]);
 
-  console.log("Buffer", buffer);
-
   const sessionIdIndex = clientLengthValue + 28; // skip 15 bytes before and 13 bytes after client record
   const sessionId = buffer.subarray(sessionIdIndex, sessionIdIndex + 4);
   const _sessionEpoch = buffer.subarray(sessionIdIndex + 4, sessionIdIndex + 8);
@@ -17,21 +15,13 @@ export const handleFetchApiRequest = (connection, responseMessage, buffer) => {
     sessionIdIndex + 8,
     sessionIdIndex + 9,
   );
-  console.log("sessionId", sessionId);
-  console.log("sessionEpoch", _sessionEpoch);
-  console.log("topicLength", topicArrayLength);
 
-  console.log(
-    "Array after fetching topicLength",
-    buffer.subarray(sessionIdIndex + 9),
-  );
   let topicIndex = sessionIdIndex + 9;
   if (topicArrayLength.readInt8() > 1) {
     const topics = new Array(topicArrayLength.readInt8() - 1)
       .fill(0)
       .map((_) => {
         const topicId = buffer.subarray(topicIndex, topicIndex + 16);
-        console.log("topicId", topicId);
         topicIndex += 16;
 
         const partitionArrayIndex = topicIndex;
@@ -43,7 +33,6 @@ export const handleFetchApiRequest = (connection, responseMessage, buffer) => {
           partitionArrayIndex + 1,
           partitionArrayIndex + 5,
         );
-        console.log("partitionId", partitionIndex);
         const partitionError = Buffer.from([0, 100]);
         const highWaterMark = Buffer.from(new Array(8).fill(0));
         const last_stable_offset = Buffer.from(new Array(8).fill(0));
