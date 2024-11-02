@@ -68,51 +68,23 @@ export const handleDescribeTopicPartitionsRequest = (
           partitionIndex,
         );
 
-        let replicaIndex = partitionIndex + 16;
-        const lengthOfReplicaArray = topicLogs.subarray(
-          replicaIndex,
-          replicaIndex + 1,
-        );
-        const replicaArrayLength = lengthOfReplicaArray.readInt8() - 1;
-        replicaIndex += 1;
-        const replicaArray = new Array(replicaArrayLength).fill(0).map((_) => {
-          const replica = topicLogs.subarray(replicaIndex, replicaIndex + 4);
-          replicaIndex += 4;
-          return replica;
-        });
+        const [replicaArrayLength, replicaArray, replicaIndex] =
+          handleReplicaAndIsrNodes(partitionIndex + 16, topicLogs);
 
         const replicaArrayBuffer = Buffer.concat([
-          lengthOfReplicaArray,
+          replicaArrayLength,
           ...replicaArray,
         ]);
 
-        let isrNodesIndex = replicaIndex;
-        const isrNodesArray = topicLogs.subarray(
-          isrNodesIndex,
-          isrNodesIndex + 1,
-        );
-        const isrNodesArrayLength = isrNodesArray.readInt8() - 1;
-        isrNodesIndex += 1;
+        const [isrNodesArrayLength, isrNodes, isrNodesIndex] =
+          handleReplicaAndIsrNodes(replicaIndex, topicLogs);
 
-        const isrNodes = new Array(isrNodesArrayLength).fill(0).map((_) => {
-          const isrNode = topicLogs.subarray(isrNodesIndex, isrNodesIndex + 4);
-          isrNodesIndex += 4;
-          return isrNode;
-        });
+        const isrNodesBuffer = Buffer.concat([
+          isrNodesArrayLength,
+          ...isrNodes,
+        ]);
 
-        const isrNodesBuffer = Buffer.concat([isrNodesArray, ...isrNodes]);
-
-        const lengthOfRemovingReplicas = topicLogs.subarray(
-          isrNodesIndex,
-          isrNodesIndex + 1,
-        );
-        isrNodesIndex += 1;
-
-        const lengthOfAddingReplicas = topicLogs.subarray(
-          isrNodesIndex,
-          isrNodesIndex + 1,
-        );
-        let leaderIndex = isrNodesIndex + 1;
+        let leaderIndex = isrNodesIndex + 2;
 
         const leaderId = topicLogs.subarray(leaderIndex, leaderIndex + 4);
         const leaderEppoch = topicLogs.subarray(
@@ -178,4 +150,19 @@ export const handleDescribeTopicPartitionsRequest = (
   };
 
   sendResponseMessage(connection, updatedResponse);
+};
+
+const handleReplicaAndIsrNodes = (arrayIndex, topicLogs) => {
+  console.log(arrayIndex)
+  const lengthOfArray = topicLogs.subarray(arrayIndex, arrayIndex + 1);
+  console.log(lengthOfArray)
+  const arrayLengthIn8 = lengthOfArray.readInt8() - 1;
+  arrayIndex += 1;
+  const arrayNodes = new Array(arrayLengthIn8).fill(0).map((_) => {
+    const replica = topicLogs.subarray(arrayIndex, arrayIndex + 4);
+    arrayIndex += 4;
+    return replica;
+  });
+
+  return [lengthOfArray, arrayNodes, arrayIndex];
 };
