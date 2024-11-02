@@ -1,3 +1,4 @@
+import fs from "fs";
 import { sendResponseMessage } from "./utils/index.js";
 
 export const handleFetchApiRequest = (connection, responseMessage, buffer) => {
@@ -24,6 +25,14 @@ export const handleFetchApiRequest = (connection, responseMessage, buffer) => {
         const topicId = buffer.subarray(topicIndex, topicIndex + 16);
         topicIndex += 16;
 
+        const logFile = fs.readFileSync(
+          `/tmp/kraft-combined-logs/__cluster_metadata-0/00000000000000000000.log`,
+        );
+
+        const partitionError =
+          logFile.indexOf(topicId) === -1
+            ? Buffer.from([0, 100])
+            : Buffer.from([0, 0]);
         const partitionArrayIndex = topicIndex;
         const partitionLength = buffer.subarray(
           partitionArrayIndex,
@@ -33,7 +42,6 @@ export const handleFetchApiRequest = (connection, responseMessage, buffer) => {
           partitionArrayIndex + 1,
           partitionArrayIndex + 5,
         );
-        const partitionError = Buffer.from([0, 100]);
         const highWaterMark = Buffer.from(new Array(8).fill(0));
         const last_stable_offset = Buffer.from(new Array(8).fill(0));
         const log_start_offset = Buffer.from(new Array(8).fill(0));
